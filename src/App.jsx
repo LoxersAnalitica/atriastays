@@ -1,0 +1,555 @@
+import { useState, useEffect, useRef } from 'react'
+
+/* ═══════════════════════════════════════════════════════════════
+   ATRIA STAYS — Landing Page de Venta
+   Propiedades de lujo en el Barrio de Salamanca
+   ═══════════════════════════════════════════════════════════════ */
+
+// ── Scroll reveal hook ────────────────────────────────────────
+function useReveal() {
+  const ref = useRef(null)
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed')
+          }
+        })
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    )
+    const elements = ref.current?.querySelectorAll('.reveal')
+    elements?.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
+  return ref
+}
+
+// ── SVG Icons ─────────────────────────────────────────────────
+const Icons = {
+  curaduria: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+      <path d="M2 17l10 5 10-5" />
+      <path d="M2 12l10 5 10-5" />
+    </svg>
+  ),
+  discrecion: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  ),
+  inteligencia: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  ),
+  acompanamiento: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  ),
+  check: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  ),
+  whatsapp: (
+    <svg viewBox="0 0 24 24">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+    </svg>
+  ),
+}
+
+// ── Navigation ────────────────────────────────────────────────
+function Navigation({ onCtaClick }) {
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 80)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  return (
+    <nav className={`nav ${scrolled ? 'nav--scrolled' : ''}`} id="nav">
+      <div className="nav__inner">
+        <a href="#" className="nav__logo">
+          Atria <span>Stays</span>
+        </a>
+        <button className="nav__cta" onClick={onCtaClick} id="nav-cta">
+          <span className="nav__cta-text">Solicitar acceso</span>
+        </button>
+      </div>
+    </nav>
+  )
+}
+
+// ── Hero Section ──────────────────────────────────────────────
+function HeroSection({ onCtaClick }) {
+  return (
+    <section className="hero section" id="hero">
+      <div className="hero__bg">
+        <img
+          src="/images/hero-door.png"
+          alt="Puerta clásica del Barrio de Salamanca"
+          loading="eager"
+        />
+      </div>
+      <div className="container">
+        <div className="hero__content">
+          <div className="hero__eyebrow">Barrio de Salamanca · Madrid</div>
+          <h1 className="hero__title">
+            Donde la historia de Madrid se encuentra con su próximo <em>patrimonio.</em>
+          </h1>
+          <p className="hero__subtitle">
+            Acceso exclusivo a las propiedades más singulares y privadas del Barrio de Salamanca.
+            Gestionamos activos que, por su naturaleza, nunca llegan al mercado abierto.
+          </p>
+          <div className="hero__cta">
+            <button className="btn btn--primary btn--large" onClick={onCtaClick} id="hero-cta">
+              Solicitar acceso al catálogo privado
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="hero__scroll-indicator">
+        <span>Descubra</span>
+        <div className="hero__scroll-line" />
+      </div>
+    </section>
+  )
+}
+
+// ── Exclusivity Section ───────────────────────────────────────
+function ExclusivitySection() {
+  const sectionRef = useReveal()
+
+  return (
+    <section className="exclusivity section" id="exclusividad" ref={sectionRef}>
+      <div className="container">
+        <div className="exclusivity__grid">
+          <div className="exclusivity__image reveal">
+            <img
+              src="/images/molding-detail.png"
+              alt="Moldura restaurada en un palacete del Barrio de Salamanca"
+              loading="lazy"
+            />
+            <div className="exclusivity__stat">
+              <div className="exclusivity__stat-number">70%</div>
+              <div className="exclusivity__stat-label">Transacciones Off-Market</div>
+            </div>
+          </div>
+          <div className="exclusivity__content">
+            <div className="section-label reveal">Exclusividad</div>
+            <h2 className="section-title reveal reveal-delay-1">
+              El lujo real no se anuncia, se descubre.
+            </h2>
+            <div className="divider reveal reveal-delay-2" />
+            <p className="exclusivity__text reveal reveal-delay-2">
+              En las calles del Barrio de Salamanca, las oportunidades más extraordinarias
+              suelen ser invisibles para el gran público. En Atria Stays, el 70% de nuestras
+              transacciones se realizan bajo el formato off-market.
+            </p>
+            <p className="exclusivity__text reveal reveal-delay-3">
+              Nuestra labor no es solo mostrar viviendas, sino actuar como custodios de su
+              privacidad y tiempo. Si busca una joya arquitectónica en Recoletos, un ático con
+              vistas en Castellana o una inversión estratégica en Goya, le abrimos las puertas
+              a lo que nadie más puede ver.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Services Section ──────────────────────────────────────────
+function ServicesSection() {
+  const sectionRef = useReveal()
+
+  const services = [
+    {
+      icon: Icons.curaduria,
+      title: 'Curaduría de Activos',
+      desc: 'Solo le presentamos propiedades que cumplen con sus estándares técnicos y estéticos. Cada activo es evaluado bajo criterios de excelencia antes de llegar a usted.',
+    },
+    {
+      icon: Icons.discrecion,
+      title: 'Discreción Absoluta',
+      desc: 'Protegemos su identidad y la confidencialidad de la operación desde el primer contacto. Su privacidad es nuestro compromiso más firme.',
+    },
+    {
+      icon: Icons.inteligencia,
+      title: 'Inteligencia de Mercado',
+      desc: 'Datos reales de cierre y análisis de rentabilidad en el código postal más estable de Europa. Información que no encontrará en ningún portal.',
+    },
+    {
+      icon: Icons.acompanamiento,
+      title: 'Acompañamiento 360º',
+      desc: 'Soporte legal, fiscal y técnico para que usted solo tenga que elegir su nueva llave. Gestionamos cada detalle de la operación.',
+    },
+  ]
+
+  return (
+    <section className="services section" id="servicios" ref={sectionRef}>
+      <div className="container">
+        <div className="services__header">
+          <div className="section-label reveal" style={{ justifyContent: 'center' }}>
+            Servicio personalizado
+          </div>
+          <h2 className="section-title reveal reveal-delay-1">
+            Su experiencia con nosotros
+          </h2>
+          <div className="divider divider--center reveal reveal-delay-2" />
+        </div>
+        <div className="services__grid reveal reveal-delay-2">
+          {services.map((s, i) => (
+            <div className="service-card" key={i} id={`service-${i}`}>
+              <div className="service-card__icon">{s.icon}</div>
+              <h3 className="service-card__title">{s.title}</h3>
+              <p className="service-card__desc">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Barrio Section ────────────────────────────────────────────
+function BarrioSection() {
+  const sectionRef = useReveal()
+
+  return (
+    <section className="barrio section" id="barrio" ref={sectionRef}>
+      <div className="barrio__bg">
+        <img
+          src="/images/retiro-view.png"
+          alt="Vista del Retiro desde un ático en Salamanca"
+          loading="lazy"
+        />
+      </div>
+      <div className="container">
+        <div className="barrio__content">
+          <div className="section-label reveal">La Milla de Oro</div>
+          <h2 className="section-title reveal reveal-delay-1">
+            Su ecosistema de éxito.
+          </h2>
+          <div className="divider reveal reveal-delay-2" />
+          <p className="barrio__text reveal reveal-delay-2">
+            Más que una ubicación, es un estándar de vida. Vivir aquí es respirar la elegancia
+            de las fincas clásicas del siglo XIX, caminar hacia las boutiques de la calle Serrano
+            y disfrutar de la mejor oferta gastronómica de la capital.
+          </p>
+          <p className="barrio__text reveal reveal-delay-3">
+            Entendemos la idiosincrasia de cada manzana: desde la tranquilidad de Lista hasta la
+            vibrante energía de Jorge Juan. Sabemos dónde está la luz, dónde está el silencio
+            y dónde está la rentabilidad.
+          </p>
+          <div className="barrio__highlights reveal reveal-delay-4">
+            <div className="barrio__highlight">
+              <div className="barrio__highlight-value">S. XIX</div>
+              <div className="barrio__highlight-label">Patrimonio arquitectónico</div>
+            </div>
+            <div className="barrio__highlight">
+              <div className="barrio__highlight-value">Nº1</div>
+              <div className="barrio__highlight-label">Código postal de Europa</div>
+            </div>
+            <div className="barrio__highlight">
+              <div className="barrio__highlight-value">∞</div>
+              <div className="barrio__highlight-label">Potencial de revalorización</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Profile Section ───────────────────────────────────────────
+function ProfileSection() {
+  const sectionRef = useReveal()
+
+  return (
+    <section className="profile section" id="perfil" ref={sectionRef}>
+      <div className="container">
+        <div className="profile__inner">
+          <div className="section-label reveal" style={{ justifyContent: 'center' }}>
+            Nuestro compromiso
+          </div>
+          <h2 className="section-title reveal reveal-delay-1">
+            Un servicio a la altura de sus expectativas.
+          </h2>
+          <div className="divider divider--center reveal reveal-delay-2" />
+          <p className="profile__text reveal reveal-delay-2">
+            Atendemos a un perfil de cliente que valora la eficiencia y la sofisticación. Ya sea
+            un inversor internacional buscando la seguridad del ladrillo madrileño o una familia
+            que desea un hogar generacional, nuestro enfoque es el mismo: excelencia sin concesiones.
+          </p>
+          <div className="profile__badge reveal reveal-delay-3">
+            <div className="profile__badge-dot" />
+            Acceso por invitación
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Lead Form Section ─────────────────────────────────────────
+function LeadFormSection() {
+  const sectionRef = useReveal()
+  const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    interest: '',
+    budget: '',
+  })
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+
+    // Push a dataLayer event for GTM tracking
+    if (window.dataLayer) {
+      window.dataLayer.push({
+        event: 'lead_form_submit',
+        formType: 'portfolio_request',
+        interest: formData.interest,
+      })
+    }
+
+    // Track Meta lead event
+    if (window.fbq) {
+      window.fbq('track', 'Lead', {
+        content_name: 'Portfolio Confidencial 2026',
+        content_category: formData.interest,
+      })
+    }
+
+    // Send to Kommo CRM
+    try {
+      await fetch('/api/kommo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+    } catch (err) {
+      console.error('CRM submission error:', err)
+    }
+
+    setSubmitting(false)
+    setSubmitted(true)
+  }
+
+  return (
+    <section className="lead-form section" id="contacto" ref={sectionRef}>
+      <div className="container">
+        <div className="lead-form__inner">
+          <div className="lead-form__content">
+            <div className="section-label reveal">Portfolio exclusivo</div>
+            <h2 className="section-title reveal reveal-delay-1">
+              El mercado que no aparece en los portales.
+            </h2>
+            <div className="divider reveal reveal-delay-2" />
+            <p className="lead-form__text reveal reveal-delay-2">
+              Suscríbase para recibir nuestra "Selección Privada 2026". Un dossier confidencial
+              con las propiedades más destacadas del trimestre que se gestionan bajo estricta privacidad.
+            </p>
+            <div className="lead-form__trust reveal reveal-delay-3">
+              <div className="lead-form__trust-item">
+                <span className="lead-form__trust-icon">{Icons.check}</span>
+                <span className="lead-form__trust-text">
+                  Acceso anticipado a propiedades antes de su publicación
+                </span>
+              </div>
+              <div className="lead-form__trust-item">
+                <span className="lead-form__trust-icon">{Icons.check}</span>
+                <span className="lead-form__trust-text">
+                  Información de mercado verificada y datos de cierre reales
+                </span>
+              </div>
+              <div className="lead-form__trust-item">
+                <span className="lead-form__trust-icon">{Icons.check}</span>
+                <span className="lead-form__trust-text">
+                  Asesoramiento personalizado sin compromiso
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="reveal reveal-delay-2">
+            {!submitted ? (
+              <form className="form" onSubmit={handleSubmit} id="lead-form">
+                <h3 className="form__title">Solicitar acceso</h3>
+                <p className="form__subtitle">
+                  Complete el formulario y recibirá el dossier en las próximas 24h.
+                </p>
+
+                <div className="form__group">
+                  <label className="form__label" htmlFor="name">Nombre completo *</label>
+                  <input
+                    className="form__input"
+                    type="text"
+                    id="name"
+                    name="name"
+                    placeholder="Su nombre completo"
+                    required
+                    value={formData.name}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="form__group">
+                  <label className="form__label" htmlFor="email">Correo electrónico profesional *</label>
+                  <input
+                    className="form__input"
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="nombre@empresa.com"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="form__row">
+                  <div className="form__group">
+                    <label className="form__label" htmlFor="interest">Interés *</label>
+                    <select
+                      className="form__select"
+                      id="interest"
+                      name="interest"
+                      required
+                      value={formData.interest}
+                      onChange={handleChange}
+                    >
+                      <option value="">Seleccione</option>
+                      <option value="inversion">Inversión</option>
+                      <option value="residencia">Residencia</option>
+                    </select>
+                  </div>
+
+                  <div className="form__group">
+                    <label className="form__label" htmlFor="budget">Presupuesto estimado</label>
+                    <select
+                      className="form__select"
+                      id="budget"
+                      name="budget"
+                      value={formData.budget}
+                      onChange={handleChange}
+                    >
+                      <option value="">Opcional</option>
+                      <option value="500k-1m">500.000€ — 1M€</option>
+                      <option value="1m-2m">1M€ — 2M€</option>
+                      <option value="2m-5m">2M€ — 5M€</option>
+                      <option value="5m+">+5M€</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button className="btn btn--primary btn--large form__submit" type="submit" id="form-submit-btn" disabled={submitting}>
+                  {submitting ? 'Enviando...' : 'Recibir Portfolio Confidencial'}
+                </button>
+
+                <p className="form__privacy">
+                  Al enviar este formulario, acepta nuestra política de privacidad.
+                  Sus datos serán tratados con absoluta confidencialidad.
+                </p>
+              </form>
+            ) : (
+              <div className="form form__success" id="form-success">
+                <div className="form__success-icon">✦</div>
+                <h3 className="form__success-title">Solicitud recibida</h3>
+                <p className="form__success-text">
+                  Gracias por su interés. Recibirá la Selección Privada 2026 en su correo electrónico
+                  en las próximas 24 horas.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Footer ────────────────────────────────────────────────────
+function Footer() {
+  return (
+    <footer className="footer" id="footer">
+      <div className="container">
+        <div className="footer__inner">
+          <div className="footer__brand">
+            Atria <span>Stays</span>
+          </div>
+          <div className="footer__links">
+            <a href="#" className="footer__link">Privacidad</a>
+            <a href="#" className="footer__link">Legal</a>
+          </div>
+          <div className="footer__legal">
+            © {new Date().getFullYear()} Atria Stays. Todos los derechos reservados.
+          </div>
+        </div>
+      </div>
+    </footer>
+  )
+}
+
+// ── WhatsApp Button ───────────────────────────────────────────
+function WhatsAppButton() {
+  const phoneNumber = '34919934639'
+  const message = 'Hola, me interesa conocer las propiedades disponibles en el Barrio de Salamanca.'
+
+  return (
+    <a
+      href={`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="whatsapp-btn"
+      id="whatsapp-btn"
+      aria-label="Contactar por WhatsApp"
+    >
+      {Icons.whatsapp}
+      <span className="whatsapp-btn__tooltip">¿Hablamos?</span>
+    </a>
+  )
+}
+
+// ── Main App ──────────────────────────────────────────────────
+export default function App() {
+  const scrollToForm = () => {
+    const form = document.getElementById('contacto')
+    if (form) {
+      form.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
+  return (
+    <>
+      <Navigation onCtaClick={scrollToForm} />
+      <main>
+        <HeroSection onCtaClick={scrollToForm} />
+        <ExclusivitySection />
+        <ServicesSection />
+        <BarrioSection />
+        <ProfileSection />
+        <LeadFormSection />
+      </main>
+      <Footer />
+      <WhatsAppButton />
+    </>
+  )
+}
