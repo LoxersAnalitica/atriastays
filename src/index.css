@@ -836,6 +836,165 @@ p {
   line-height: 1.6;
 }
 
+/* ── Wizard Form ────────────────────────────────────────────── */
+.wizard-form {
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+}
+
+.wizard-progress {
+  margin-bottom: var(--space-lg);
+}
+
+.wizard-progress__bar {
+  width: 100%;
+  height: 3px;
+  background: var(--color-bg-secondary);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.wizard-progress__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-gold-dark), var(--color-gold), var(--color-gold-light));
+  border-radius: 3px;
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+}
+
+.wizard-progress__fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-gold-light);
+  box-shadow: 0 0 10px rgba(197, 165, 114, 0.6);
+}
+
+.wizard-progress__label {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-top: 0.6rem;
+  text-align: right;
+}
+
+/* Step animation container */
+.wizard-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 140px;
+  margin-bottom: var(--space-md);
+  overflow: hidden;
+}
+
+.wizard-step__content {
+  animation-duration: 0.4s;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wizard-step--forward {
+  animation-name: wizardSlideInRight;
+}
+
+.wizard-step--back {
+  animation-name: wizardSlideInLeft;
+}
+
+@keyframes wizardSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes wizardSlideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Phone verification notice */
+.wizard-phone-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: var(--space-sm);
+  padding: 0.8rem 1rem;
+  background: rgba(197, 165, 114, 0.08);
+  border: 1px solid rgba(197, 165, 114, 0.2);
+  border-left: 3px solid var(--color-gold);
+  animation: fadeSlideUp 0.4s 0.2s both;
+}
+
+.wizard-phone-notice svg {
+  flex-shrink: 0;
+  color: var(--color-gold);
+  margin-top: 1px;
+}
+
+.wizard-phone-notice span {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--color-gold-light);
+  line-height: 1.5;
+}
+
+/* Wizard navigation buttons */
+.wizard-nav {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: auto;
+  padding-top: var(--space-md);
+}
+
+.wizard-nav__back {
+  flex: 0 0 auto;
+  padding: 0.9rem 1.5rem;
+  font-size: 0.75rem;
+}
+
+.wizard-nav__next,
+.wizard-nav__submit {
+  flex: 1;
+  text-align: center;
+  justify-content: center;
+}
+
+.wizard-nav__next {
+  padding: 0.9rem 2rem;
+}
+
+.wizard-nav__next--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.wizard-nav__next--disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 /* ── Footer ─────────────────────────────────────────────────── */
 .footer {
   background: var(--color-bg-primary);

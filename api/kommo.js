@@ -38,7 +38,8 @@ export default async function handler(req, res) {
             {
               "name": data.name,
               "custom_fields_values": [
-                { "field_code": "EMAIL", "values": [{ "value": data.email }] }
+                { "field_code": "EMAIL", "values": [{ "value": data.email }] },
+                { "field_code": "PHONE", "values": [{ "value": data.phone }] }
               ]
             }
           ]
@@ -63,7 +64,7 @@ export default async function handler(req, res) {
         const leadId = responseData[0].id;
         console.log(`[ATRIA VENTA] Lead created: ${leadId} in pipeline 13529879`);
 
-        const noteText = `📌 LEAD ATRIA VENTA\n\nNombre: ${data.name}\nEmail: ${data.email}\nInterés: ${data.interest === 'inversion' ? 'Inversión' : 'Residencia'}\nPresupuesto: ${data.budget || 'No especificado'}\n\nFuente: Landing Page Atria Stays - Barrio de Salamanca`;
+        const noteText = `📌 LEAD ATRIA VENTA\n\nNombre: ${data.name}\nEmail: ${data.email}\nTeléfono: ${data.phone}\nInterés: ${data.interest === 'inversion' ? 'Inversión' : 'Residencia'}\nPresupuesto: ${data.budget || 'No especificado'}\n\nFuente: Landing Page Atria Stays - Barrio de Salamanca`;
 
         await fetch(`${KOMMO_BASE}/api/v4/leads/notes`, {
           method: 'POST',

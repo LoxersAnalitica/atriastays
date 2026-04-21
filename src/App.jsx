@@ -301,24 +301,87 @@ function ProfileSection() {
   )
 }
 
+// ── Wizard Steps Config ───────────────────────────────────────
+const WIZARD_STEPS = [
+  { key: 'name', label: 'Nombre completo', type: 'text', placeholder: 'Su nombre completo', required: true },
+  { key: 'email', label: 'Correo electrónico profesional', type: 'email', placeholder: 'nombre@empresa.com', required: true },
+  { key: 'phone', label: 'Teléfono de contacto', type: 'tel', placeholder: '+34 600 000 000', required: true },
+  { key: 'interest', label: 'Interés', type: 'select', required: true, options: [
+    { value: '', label: 'Seleccione' },
+    { value: 'inversion', label: 'Inversión' },
+    { value: 'residencia', label: 'Residencia' },
+  ]},
+  { key: 'budget', label: 'Presupuesto estimado', type: 'select', required: false, options: [
+    { value: '', label: 'Opcional' },
+    { value: '500k-1m', label: '500.000€ — 1M€' },
+    { value: '1m-2m', label: '1M€ — 2M€' },
+    { value: '2m-5m', label: '2M€ — 5M€' },
+    { value: '5m+', label: '+5M€' },
+  ]},
+]
+
 // ── Lead Form Section ─────────────────────────────────────────
 function LeadFormSection() {
   const sectionRef = useReveal()
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [currentStep, setCurrentStep] = useState(0)
+  const [direction, setDirection] = useState('forward') // for animation direction
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     interest: '',
     budget: '',
   })
+
+  const totalSteps = WIZARD_STEPS.length
+  const progress = ((currentStep) / totalSteps) * 100
+  const step = WIZARD_STEPS[currentStep]
+  const isLastStep = currentStep === totalSteps - 1
+
+  const isCurrentStepValid = () => {
+    const value = formData[step.key]
+    if (!step.required) return true
+    if (step.type === 'tel') {
+      // Basic phone validation: at least 9 digits
+      const digits = value.replace(/\D/g, '')
+      return digits.length >= 9
+    }
+    return value.trim() !== ''
+  }
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
+  const handleNext = () => {
+    if (!isCurrentStepValid()) return
+    if (isLastStep) return
+    setDirection('forward')
+    setCurrentStep((prev) => prev + 1)
+  }
+
+  const handleBack = () => {
+    if (currentStep === 0) return
+    setDirection('back')
+    setCurrentStep((prev) => prev - 1)
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (isLastStep && isCurrentStepValid()) {
+        handleSubmit(e)
+      } else {
+        handleNext()
+      }
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!isCurrentStepValid()) return
     setSubmitting(true)
 
     // Push a dataLayer event for GTM tracking
@@ -351,6 +414,42 @@ function LeadFormSection() {
 
     setSubmitting(false)
     setSubmitted(true)
+  }
+
+  // Render input based on step type
+  const renderStepInput = () => {
+    if (step.type === 'select') {
+      return (
+        <select
+          className="form__select"
+          id={step.key}
+          name={step.key}
+          required={step.required}
+          value={formData[step.key]}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          autoFocus
+        >
+          {step.options.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      )
+    }
+    return (
+      <input
+        className="form__input"
+        type={step.type}
+        id={step.key}
+        name={step.key}
+        placeholder={step.placeholder}
+        required={step.required}
+        value={formData[step.key]}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        autoFocus
+      />
+    )
   }
 
   return (
@@ -391,78 +490,80 @@ function LeadFormSection() {
 
           <div className="reveal reveal-delay-2">
             {!submitted ? (
-              <form className="form" onSubmit={handleSubmit} id="lead-form">
+              <form className="form wizard-form" onSubmit={handleSubmit} id="lead-form">
                 <h3 className="form__title">Solicitar acceso</h3>
                 <p className="form__subtitle">
                   Complete el formulario y recibirá el dossier en las próximas 24h.
                 </p>
 
-                <div className="form__group">
-                  <label className="form__label" htmlFor="name">Nombre completo *</label>
-                  <input
-                    className="form__input"
-                    type="text"
-                    id="name"
-                    name="name"
-                    placeholder="Su nombre completo"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form__group">
-                  <label className="form__label" htmlFor="email">Correo electrónico profesional *</label>
-                  <input
-                    className="form__input"
-                    type="email"
-                    id="email"
-                    name="email"
-                    placeholder="nombre@empresa.com"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form__row">
-                  <div className="form__group">
-                    <label className="form__label" htmlFor="interest">Interés *</label>
-                    <select
-                      className="form__select"
-                      id="interest"
-                      name="interest"
-                      required
-                      value={formData.interest}
-                      onChange={handleChange}
-                    >
-                      <option value="">Seleccione</option>
-                      <option value="inversion">Inversión</option>
-                      <option value="residencia">Residencia</option>
-                    </select>
+                {/* ── Progress Bar ── */}
+                <div className="wizard-progress" id="wizard-progress">
+                  <div className="wizard-progress__bar">
+                    <div
+                      className="wizard-progress__fill"
+                      style={{ width: `${progress}%` }}
+                    />
                   </div>
-
-                  <div className="form__group">
-                    <label className="form__label" htmlFor="budget">Presupuesto estimado</label>
-                    <select
-                      className="form__select"
-                      id="budget"
-                      name="budget"
-                      value={formData.budget}
-                      onChange={handleChange}
-                    >
-                      <option value="">Opcional</option>
-                      <option value="500k-1m">500.000€ — 1M€</option>
-                      <option value="1m-2m">1M€ — 2M€</option>
-                      <option value="2m-5m">2M€ — 5M€</option>
-                      <option value="5m+">+5M€</option>
-                    </select>
+                  <div className="wizard-progress__label">
+                    Paso {currentStep + 1} de {totalSteps}
                   </div>
                 </div>
 
-                <button className="btn btn--primary btn--large form__submit" type="submit" id="form-submit-btn" disabled={submitting}>
-                  {submitting ? 'Enviando...' : 'Recibir Portfolio Confidencial'}
-                </button>
+                {/* ── Step Content ── */}
+                <div className="wizard-step" key={currentStep}>
+                  <div className={`wizard-step__content wizard-step--${direction}`}>
+                    <label className="form__label" htmlFor={step.key}>
+                      {step.label} {step.required && '*'}
+                    </label>
+                    {renderStepInput()}
+
+                    {/* Phone verification notice */}
+                    {step.key === 'phone' && (
+                      <div className="wizard-phone-notice" id="phone-verification-notice">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="8" x2="12" y2="12" />
+                          <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                        <span>Este número de teléfono será verificado por nuestro equipo para confirmar su identidad.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Navigation Buttons ── */}
+                <div className="wizard-nav">
+                  {currentStep > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn--outline wizard-nav__back"
+                      onClick={handleBack}
+                      id="wizard-back-btn"
+                    >
+                      ← Anterior
+                    </button>
+                  )}
+                  {!isLastStep ? (
+                    <button
+                      type="button"
+                      className={`btn btn--primary wizard-nav__next ${!isCurrentStepValid() ? 'wizard-nav__next--disabled' : ''}`}
+                      onClick={handleNext}
+                      disabled={!isCurrentStepValid()}
+                      id="wizard-next-btn"
+                    >
+                      Siguiente →
+                    </button>
+                  ) : (
+                    <button
+                      className={`btn btn--primary btn--large wizard-nav__submit ${!isCurrentStepValid() ? 'wizard-nav__next--disabled' : ''}`}
+                      type="submit"
+                      id="form-submit-btn"
+                      disabled={submitting || !isCurrentStepValid()}
+                    >
+                      {submitting ? 'Enviando...' : 'Recibir Portfolio Confidencial'}
+                    </button>
+                  )}
+                </div>
 
                 <p className="form__privacy">
                   Al enviar este formulario, acepta nuestra política de privacidad.
