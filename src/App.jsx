@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 
 /* ═══════════════════════════════════════════════════════════════
    ATRIA STAYS — Landing Page de Venta
@@ -651,6 +652,7 @@ export default function App() {
       </main>
       <Footer />
       <WhatsAppButton />
+      <Analytics />
     </>
   )
 }
