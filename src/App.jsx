@@ -301,11 +301,46 @@ function ProfileSection() {
   )
 }
 
+// ── Country Prefixes ──────────────────────────────────────────
+const COUNTRY_PREFIXES = [
+  { code: '+34', country: 'España', flag: '🇪🇸' },
+  { code: '+44', country: 'Reino Unido', flag: '🇬🇧' },
+  { code: '+1', country: 'Estados Unidos', flag: '🇺🇸' },
+  { code: '+33', country: 'Francia', flag: '🇫🇷' },
+  { code: '+49', country: 'Alemania', flag: '🇩🇪' },
+  { code: '+39', country: 'Italia', flag: '🇮🇹' },
+  { code: '+351', country: 'Portugal', flag: '🇵🇹' },
+  { code: '+41', country: 'Suiza', flag: '🇨🇭' },
+  { code: '+31', country: 'Países Bajos', flag: '🇳🇱' },
+  { code: '+32', country: 'Bélgica', flag: '🇧🇪' },
+  { code: '+46', country: 'Suecia', flag: '🇸🇪' },
+  { code: '+47', country: 'Noruega', flag: '🇳🇴' },
+  { code: '+45', country: 'Dinamarca', flag: '🇩🇰' },
+  { code: '+43', country: 'Austria', flag: '🇦🇹' },
+  { code: '+352', country: 'Luxemburgo', flag: '🇱🇺' },
+  { code: '+377', country: 'Mónaco', flag: '🇲🇨' },
+  { code: '+971', country: 'Emiratos Árabes', flag: '🇦🇪' },
+  { code: '+966', country: 'Arabia Saudí', flag: '🇸🇦' },
+  { code: '+52', country: 'México', flag: '🇲🇽' },
+  { code: '+55', country: 'Brasil', flag: '🇧🇷' },
+  { code: '+54', country: 'Argentina', flag: '🇦🇷' },
+  { code: '+56', country: 'Chile', flag: '🇨🇱' },
+  { code: '+57', country: 'Colombia', flag: '🇨🇴' },
+  { code: '+86', country: 'China', flag: '🇨🇳' },
+  { code: '+81', country: 'Japón', flag: '🇯🇵' },
+  { code: '+82', country: 'Corea del Sur', flag: '🇰🇷' },
+  { code: '+7', country: 'Rusia', flag: '🇷🇺' },
+  { code: '+90', country: 'Turquía', flag: '🇹🇷' },
+  { code: '+91', country: 'India', flag: '🇮🇳' },
+  { code: '+27', country: 'Sudáfrica', flag: '🇿🇦' },
+  { code: '+212', country: 'Marruecos', flag: '🇲🇦' },
+]
+
 // ── Wizard Steps Config ───────────────────────────────────────
 const WIZARD_STEPS = [
   { key: 'name', label: 'Nombre completo', type: 'text', placeholder: 'Su nombre completo', required: true },
   { key: 'email', label: 'Correo electrónico profesional', type: 'email', placeholder: 'nombre@empresa.com', required: true },
-  { key: 'phone', label: 'Teléfono de contacto', type: 'tel', placeholder: '+34 600 000 000', required: true },
+  { key: 'phone', label: 'Teléfono de contacto', type: 'tel', placeholder: '600 000 000', required: true },
   { key: 'interest', label: 'Interés', type: 'select', required: true, options: [
     { value: '', label: 'Seleccione' },
     { value: 'inversion', label: 'Inversión' },
@@ -327,6 +362,10 @@ function LeadFormSection() {
   const [submitting, setSubmitting] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [direction, setDirection] = useState('forward') // for animation direction
+  const [phonePrefix, setPhonePrefix] = useState('+34')
+  const [prefixDropdownOpen, setPrefixDropdownOpen] = useState(false)
+  const [prefixSearch, setPrefixSearch] = useState('')
+  const prefixRef = useRef(null)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -334,6 +373,24 @@ function LeadFormSection() {
     interest: '',
     budget: '',
   })
+
+  // Close prefix dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (prefixRef.current && !prefixRef.current.contains(e.target)) {
+        setPrefixDropdownOpen(false)
+        setPrefixSearch('')
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const filteredPrefixes = COUNTRY_PREFIXES.filter(
+    (p) =>
+      p.country.toLowerCase().includes(prefixSearch.toLowerCase()) ||
+      p.code.includes(prefixSearch)
+  )
 
   const totalSteps = WIZARD_STEPS.length
   const progress = ((currentStep) / totalSteps) * 100
@@ -401,12 +458,16 @@ function LeadFormSection() {
       })
     }
 
-    // Send to Kommo CRM
+    // Send to Kommo CRM (prepend prefix to phone)
+    const submissionData = {
+      ...formData,
+      phone: `${phonePrefix} ${formData.phone}`,
+    }
     try {
       await fetch('/api/kommo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submissionData),
       })
     } catch (err) {
       console.error('CRM submission error:', err)
@@ -436,6 +497,80 @@ function LeadFormSection() {
         </select>
       )
     }
+
+    // Phone field with prefix selector
+    if (step.key === 'phone') {
+      const selectedPrefix = COUNTRY_PREFIXES.find((p) => p.code === phonePrefix)
+      return (
+        <div className="phone-field" id="phone-field">
+          <div className="phone-prefix" ref={prefixRef}>
+            <button
+              type="button"
+              className="phone-prefix__toggle"
+              onClick={() => {
+                setPrefixDropdownOpen(!prefixDropdownOpen)
+                setPrefixSearch('')
+              }}
+              id="prefix-toggle"
+            >
+              <span className="phone-prefix__flag">{selectedPrefix?.flag}</span>
+              <span className="phone-prefix__code">{phonePrefix}</span>
+              <svg className="phone-prefix__arrow" width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
+              </svg>
+            </button>
+            {prefixDropdownOpen && (
+              <div className="phone-prefix__dropdown" id="prefix-dropdown">
+                <div className="phone-prefix__search-wrap">
+                  <input
+                    type="text"
+                    className="phone-prefix__search"
+                    placeholder="Buscar país..."
+                    value={prefixSearch}
+                    onChange={(e) => setPrefixSearch(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div className="phone-prefix__list">
+                  {filteredPrefixes.map((p) => (
+                    <button
+                      key={p.code}
+                      type="button"
+                      className={`phone-prefix__option ${p.code === phonePrefix ? 'phone-prefix__option--active' : ''}`}
+                      onClick={() => {
+                        setPhonePrefix(p.code)
+                        setPrefixDropdownOpen(false)
+                        setPrefixSearch('')
+                      }}
+                    >
+                      <span className="phone-prefix__option-flag">{p.flag}</span>
+                      <span className="phone-prefix__option-country">{p.country}</span>
+                      <span className="phone-prefix__option-code">{p.code}</span>
+                    </button>
+                  ))}
+                  {filteredPrefixes.length === 0 && (
+                    <div className="phone-prefix__no-results">Sin resultados</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          <input
+            className="form__input phone-field__input"
+            type="tel"
+            id={step.key}
+            name={step.key}
+            placeholder={step.placeholder}
+            required={step.required}
+            value={formData[step.key]}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            autoFocus
+          />
+        </div>
+      )
+    }
+
     return (
       <input
         className="form__input"
