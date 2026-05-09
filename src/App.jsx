@@ -104,7 +104,7 @@ function HeroSection({ onCtaClick }) {
         <div className="hero__content">
           <div className="hero__eyebrow">Barrio de Salamanca · Madrid</div>
           <h1 className="hero__title">
-            Donde la historia de Madrid se encuentra con su próximo <em>patrimonio.</em>
+            Algunas propiedades no están en venta. Están esperando al <em>comprador adecuado.</em>
           </h1>
           <p className="hero__subtitle">
             Acceso exclusivo a las propiedades más singulares y privadas del Barrio de Salamanca.
@@ -828,6 +828,11 @@ function WhatsAppButton() {
 
 // ── Main App ──────────────────────────────────────────────────
 export default function App() {
+  // Ensure the page starts at the top on load
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+
   const scrollToForm = () => {
     const form = document.getElementById('contacto')
     if (form) {
