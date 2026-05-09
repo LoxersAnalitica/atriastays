@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 /* ═══════════════════════════════════════════════════════════════
    ATRIA STAYS — Landing Page de Venta
@@ -336,6 +336,34 @@ const COUNTRY_PREFIXES = [
   { code: '+212', country: 'Marruecos', flag: '🇲🇦' },
 ]
 
+// ── UTM Parameter Capture ─────────────────────────────────────
+function getUtmParams() {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    return {
+      utm_source: params.get('utm_source') || '',
+      utm_medium: params.get('utm_medium') || '',
+      utm_campaign: params.get('utm_campaign') || '',
+      utm_content: params.get('utm_content') || '',
+      utm_term: params.get('utm_term') || '',
+    }
+  } catch {
+    return { utm_source: '', utm_medium: '', utm_campaign: '', utm_content: '', utm_term: '' }
+  }
+}
+
+function getLeadSource() {
+  const { utm_source, utm_medium } = getUtmParams()
+  if (utm_source === 'google' || utm_medium === 'cpc' || utm_medium === 'ppc') return 'Google Ads'
+  if (utm_source === 'meta' || utm_source === 'facebook' || utm_source === 'instagram' || utm_source === 'fb' || utm_source === 'ig') return 'Meta Ads'
+  if (utm_source || utm_medium) return `${utm_source || 'unknown'} / ${utm_medium || 'unknown'}`
+  // Check referrer as fallback
+  const ref = document.referrer || ''
+  if (ref.includes('google.com')) return 'Google Orgánico'
+  if (ref.includes('facebook.com') || ref.includes('instagram.com')) return 'Meta Orgánico'
+  return 'Directo'
+}
+
 // ── Wizard Steps Config ───────────────────────────────────────
 const WIZARD_STEPS = [
   { key: 'name', label: 'Nombre completo', type: 'text', placeholder: 'Su nombre completo', required: true },
@@ -363,9 +391,9 @@ function LeadFormSection() {
   const [currentStep, setCurrentStep] = useState(0)
   const [direction, setDirection] = useState('forward') // for animation direction
   const [phonePrefix, setPhonePrefix] = useState('+34')
-  const [prefixDropdownOpen, setPrefixDropdownOpen] = useState(false)
+  const [prefixModalOpen, setPrefixModalOpen] = useState(false)
   const [prefixSearch, setPrefixSearch] = useState('')
-  const prefixRef = useRef(null)
+  const searchInputRef = useRef(null)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -374,17 +402,18 @@ function LeadFormSection() {
     budget: '',
   })
 
-  // Close prefix dropdown on outside click
+  // Lock body scroll when prefix modal is open
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (prefixRef.current && !prefixRef.current.contains(e.target)) {
-        setPrefixDropdownOpen(false)
-        setPrefixSearch('')
-      }
+    if (prefixModalOpen) {
+      document.body.style.overflow = 'hidden'
+      // Focus search input after modal animation
+      setTimeout(() => searchInputRef.current?.focus(), 100)
+    } else {
+      document.body.style.overflow = ''
+      setPrefixSearch('')
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    return () => { document.body.style.overflow = '' }
+  }, [prefixModalOpen])
 
   const filteredPrefixes = COUNTRY_PREFIXES.filter(
     (p) =>
@@ -458,10 +487,16 @@ function LeadFormSection() {
       })
     }
 
+    // Capture UTM params & lead source
+    const utmParams = getUtmParams()
+    const leadSource = getLeadSource()
+
     // Send to Kommo CRM (prepend prefix to phone)
     const submissionData = {
       ...formData,
       phone: `${phonePrefix} ${formData.phone}`,
+      lead_source: leadSource,
+      ...utmParams,
     }
     try {
       await fetch('/api/kommo', {
@@ -498,19 +533,16 @@ function LeadFormSection() {
       )
     }
 
-    // Phone field with prefix selector
+    // Phone field with prefix selector (fullscreen modal for mobile)
     if (step.key === 'phone') {
       const selectedPrefix = COUNTRY_PREFIXES.find((p) => p.code === phonePrefix)
       return (
-        <div className="phone-field" id="phone-field">
-          <div className="phone-prefix" ref={prefixRef}>
+        <>
+          <div className="phone-field" id="phone-field">
             <button
               type="button"
               className="phone-prefix__toggle"
-              onClick={() => {
-                setPrefixDropdownOpen(!prefixDropdownOpen)
-                setPrefixSearch('')
-              }}
+              onClick={() => setPrefixModalOpen(true)}
               id="prefix-toggle"
             >
               <span className="phone-prefix__flag">{selectedPrefix?.flag}</span>
@@ -519,55 +551,85 @@ function LeadFormSection() {
                 <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
               </svg>
             </button>
-            {prefixDropdownOpen && (
-              <div className="phone-prefix__dropdown" id="prefix-dropdown">
-                <div className="phone-prefix__search-wrap">
+            <input
+              className="form__input phone-field__input"
+              type="tel"
+              id={step.key}
+              name={step.key}
+              placeholder={step.placeholder}
+              required={step.required}
+              value={formData[step.key]}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              inputMode="tel"
+              autoFocus
+            />
+          </div>
+
+          {/* Prefix selection modal — fullscreen for easy mobile use */}
+          {prefixModalOpen && (
+            <div className="prefix-modal" id="prefix-modal">
+              <div className="prefix-modal__backdrop" onClick={() => setPrefixModalOpen(false)} />
+              <div className="prefix-modal__sheet">
+                <div className="prefix-modal__header">
+                  <h4 className="prefix-modal__title">Seleccionar país</h4>
+                  <button
+                    type="button"
+                    className="prefix-modal__close"
+                    onClick={() => setPrefixModalOpen(false)}
+                    aria-label="Cerrar"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="prefix-modal__search-wrap">
+                  <svg className="prefix-modal__search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
                   <input
+                    ref={searchInputRef}
                     type="text"
-                    className="phone-prefix__search"
-                    placeholder="Buscar país..."
+                    className="prefix-modal__search"
+                    placeholder="Buscar país o prefijo..."
                     value={prefixSearch}
                     onChange={(e) => setPrefixSearch(e.target.value)}
-                    autoFocus
                   />
                 </div>
-                <div className="phone-prefix__list">
+                <div className="prefix-modal__list">
                   {filteredPrefixes.map((p) => (
                     <button
                       key={p.code}
                       type="button"
-                      className={`phone-prefix__option ${p.code === phonePrefix ? 'phone-prefix__option--active' : ''}`}
+                      className={`prefix-modal__option ${p.code === phonePrefix ? 'prefix-modal__option--active' : ''}`}
                       onClick={() => {
                         setPhonePrefix(p.code)
-                        setPrefixDropdownOpen(false)
-                        setPrefixSearch('')
+                        setPrefixModalOpen(false)
                       }}
                     >
-                      <span className="phone-prefix__option-flag">{p.flag}</span>
-                      <span className="phone-prefix__option-country">{p.country}</span>
-                      <span className="phone-prefix__option-code">{p.code}</span>
+                      <span className="prefix-modal__option-flag">{p.flag}</span>
+                      <span className="prefix-modal__option-country">{p.country}</span>
+                      <span className="prefix-modal__option-code">{p.code}</span>
+                      {p.code === phonePrefix && (
+                        <svg className="prefix-modal__option-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
                     </button>
                   ))}
                   {filteredPrefixes.length === 0 && (
-                    <div className="phone-prefix__no-results">Sin resultados</div>
+                    <div className="prefix-modal__no-results">
+                      <span>Sin resultados para "{prefixSearch}"</span>
+                    </div>
                   )}
                 </div>
               </div>
-            )}
-          </div>
-          <input
-            className="form__input phone-field__input"
-            type="tel"
-            id={step.key}
-            name={step.key}
-            placeholder={step.placeholder}
-            required={step.required}
-            value={formData[step.key]}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            autoFocus
-          />
-        </div>
+            </div>
+          )}
+        </>
       )
     }
 

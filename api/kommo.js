@@ -23,17 +23,33 @@ export default async function handler(req, res) {
   try {
     const data = req.body;
 
+    // --- Extract UTM & source data ---
+    const leadSource = data.lead_source || 'Directo';
+    const utmSource = data.utm_source || '';
+    const utmMedium = data.utm_medium || '';
+    const utmCampaign = data.utm_campaign || '';
+    const utmContent = data.utm_content || '';
+    const utmTerm = data.utm_term || '';
+
     // --- 1. Preparar el Lead para el Pipeline de Atria Venta ---
     const leadName = `Atria Venta - ${data.interest === 'inversion' ? 'Inversión' : 'Residencia'}: ${data.name}`;
+
+    // Build tags: always "Atria Venta" + lead source tag
+    const tags = [
+      { "name": "Atria Venta" },
+      { "name": leadSource },
+    ];
+    // Add campaign tag if present
+    if (utmCampaign) {
+      tags.push({ "name": `Campaña: ${utmCampaign}` });
+    }
 
     const kommoPayload = [
       {
         "name": leadName,
         "pipeline_id": 13529879,
         "_embedded": {
-          "tags": [
-            { "name": "Atria Venta" }
-          ],
+          "tags": tags,
           "contacts": [
             {
               "name": data.name,
@@ -58,13 +74,19 @@ export default async function handler(req, res) {
     });
 
     if (kommoResponse.ok || kommoResponse.status === 200 || kommoResponse.status === 201) {
-      // Attach note with lead details
+      // Attach note with lead details + source tracking
       try {
         const responseData = await kommoResponse.json();
         const leadId = responseData[0].id;
-        console.log(`[ATRIA VENTA] Lead created: ${leadId} in pipeline 13529879`);
+        console.log(`[ATRIA VENTA] Lead created: ${leadId} in pipeline 13529879 | Source: ${leadSource}`);
 
-        const noteText = `📌 LEAD ATRIA VENTA\n\nNombre: ${data.name}\nEmail: ${data.email}\nTeléfono: ${data.phone}\nInterés: ${data.interest === 'inversion' ? 'Inversión' : 'Residencia'}\nPresupuesto: ${data.budget || 'No especificado'}\n\nFuente: Landing Page Atria Stays - Barrio de Salamanca`;
+        // Build UTM section for note
+        let utmSection = '';
+        if (utmSource || utmMedium || utmCampaign || utmContent || utmTerm) {
+          utmSection = `\n\n📊 DATOS DE CAMPAÑA\nUTM Source: ${utmSource || '—'}\nUTM Medium: ${utmMedium || '—'}\nUTM Campaign: ${utmCampaign || '—'}\nUTM Content: ${utmContent || '—'}\nUTM Term: ${utmTerm || '—'}`;
+        }
+
+        const noteText = `📌 LEAD ATRIA VENTA\n\nNombre: ${data.name}\nEmail: ${data.email}\nTeléfono: ${data.phone}\nInterés: ${data.interest === 'inversion' ? 'Inversión' : 'Residencia'}\nPresupuesto: ${data.budget || 'No especificado'}\n\n🔗 FUENTE: ${leadSource}${utmSection}\n\nFuente: Landing Page Atria Stays - Barrio de Salamanca`;
 
         await fetch(`${KOMMO_BASE}/api/v4/leads/notes`, {
           method: 'POST',
